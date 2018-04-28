@@ -213,12 +213,16 @@ defmodule Ueberauth.Strategy.Github do
     user["email"] || get_primary_email!(user)
   end
 
+  # Note: this is a workaround to login a user with private email, has impacts for other parts that use the email field value
   defp get_primary_email!(user) do
-    unless user["emails"] && (Enum.count(user["emails"]) > 0) do
-      raise "Unable to access the user's email address"
+    cond do
+      user["emails"] && (Enum.count(user["emails"]) > 0) ->
+        Enum.find(user["emails"], &(&1["primary"]))["email"]  
+      user["login"] ->
+        user["login"]
+      true ->
+        raise "Unable to access the user's email address"
     end
-
-    Enum.find(user["emails"], &(&1["primary"]))["email"]
   end
 
   defp fetch_user(conn, token) do
